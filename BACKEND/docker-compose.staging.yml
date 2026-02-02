@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:15-alpine
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data_staging:/var/lib/postgresql/data
+    env_file:
+      - .env.staging
+    environment:
+      - POSTGRES_DB=${DB_NAME:-fastpay_db}
+      - POSTGRES_USER=${DB_USER:-fastpay_user}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-changeme}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fastpay_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fastpay_staging
+
+  web:
+    build: .
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn fastpay_be.wsgi:application --bind 0.0.0.0:8000 --workers 4 --threads 2 --timeout 120"
+    volumes:
+      - .:/app
+      - static_volume_staging:/app/staticfiles
+      - media_volume_staging:/app/media
+      - storage_volume_staging:/app/storage
+    ports:
+      - "8001:8000"
+    env_file:
+      - .env.staging
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - fastpay_staging
+    restart: unless-stopped
+
+volumes:
+  postgres_data_staging:
+  static_volume_staging:
+  media_volume_staging:
+  storage_volume_staging:
+
+networks:
+  fastpay_staging:
+    driver: bridge

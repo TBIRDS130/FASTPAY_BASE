@@ -1,0 +1,178 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light Theme - Default */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
+    --primary: 150 100% 50%;
+    --primary-foreground: 0 0% 4%;
+    --secondary: 238 87% 64%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 142 76% 50%;
+    --radius: 0.75rem;
+  }
+  .dark {
+    /* Dark Premium Theme */
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 11.8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 11.8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 150 100% 50%;
+    --primary-foreground: 0 0% 3.9%;
+    --secondary: 238 87% 64%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 55.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 150 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    position: relative;
+    min-height: 100vh;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+    overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* Global Scrollbar Reset & Hide - Exclude form inputs */
+  *:not(input):not(textarea):not(select) {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  /* Webkit scrollbar - exclude inputs */
+  *:not(input):not(textarea):not(select)::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+
+  /* Explicitly hide scrollbars on all form inputs */
+  input, textarea, select {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  input::-webkit-scrollbar,
+  textarea::-webkit-scrollbar,
+  select::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  .dark *:not(input):not(textarea):not(select)::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted) / 0.3);
+  }
+
+  .dark *:not(input):not(textarea):not(select)::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.4);
+  }
+
+  /* Enhanced Typography */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-tight;
+    line-height: 1.2;
+  }
+  
+  p {
+    @apply leading-relaxed;
+  }
+
+  body:not(.dark) {
+    background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 50%, #ffffff 100%);
+  }
+  body.dark {
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%);
+  }
+}
+
+/* Utilities */
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  .scroll-touch {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .glass {
+    @apply bg-background/50 backdrop-blur-md border border-border/50;
+  }
+
+  .transition-smooth {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .theme-swatch {
+    background-color: var(--swatch-color);
+  }
+
+  .theme-swatch-gradient {
+    background: linear-gradient(135deg, var(--swatch-start) 0%, var(--swatch-end) 100%);
+  }
+}
+
+/* Rounded Corner Fixes */
+[class*="rounded"] {
+  border-radius: var(--theme-border-radius, var(--radius, 0.75rem)) !important;
+}
+
+.card, [class*="card"], [class*="rounded"] {
+  overflow: hidden;
+  isolation: isolate;
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+}
+
+.card > *:first-child, [class*="card"] > *:first-child {
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+}
+
+.card > *:last-child, [class*="card"] > *:last-child {
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
+}
+
+/* Ensure tables respect rounding */
+table { border-collapse: separate; border-spacing: 0; }
+tr:first-child th:first-child { border-top-left-radius: inherit; }
+tr:first-child th:last-child { border-top-right-radius: inherit; }
+tr:last-child td:first-child { border-bottom-left-radius: inherit; }
+tr:last-child td:last-child { border-bottom-right-radius: inherit; }

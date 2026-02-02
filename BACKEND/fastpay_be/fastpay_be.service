@@ -1,0 +1,24 @@
+[Unit]
+Description=FastPay Backend Django Application
+After=network.target postgresql.service
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/fastpay_be
+Environment="PATH=/opt/fastpay_be/venv/bin"
+ExecStart=/opt/fastpay_be/venv/bin/gunicorn \
+    --workers 4 \
+    --threads 2 \
+    --timeout 120 \
+    --bind 0.0.0.0:8000 \
+    --access-logfile /var/log/fastpay_be/access.log \
+    --error-logfile /var/log/fastpay_be/error.log \
+    fastpay_be.wsgi:application
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

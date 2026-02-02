@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "FastPay Capture",
+  "version": "0.1.0",
+  "description": "Capture selected text and send to FastPay backend",
+  "permissions": ["activeTab", "storage", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_title": "FastPay Capture",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

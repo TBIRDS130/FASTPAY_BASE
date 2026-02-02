@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FastPay API</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: #0b0f1a;
+        color: #e6e9ef;
+      }
+      .wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 48px 20px;
+      }
+      .hero {
+        display: grid;
+        gap: 24px;
+        padding: 28px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #111827, #1f2937);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      }
+      .hero h1 {
+        margin: 0;
+        font-size: 32px;
+        letter-spacing: 0.2px;
+      }
+      .hero p {
+        margin: 0;
+        color: #cbd5f5;
+        line-height: 1.6;
+      }
+      .grid {
+        margin-top: 28px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 16px;
+      }
+      .card {
+        border-radius: 14px;
+        padding: 16px;
+        background: #0f172a;
+        border: 1px solid #243145;
+      }
+      .card h3 {
+        margin: 0 0 8px 0;
+        font-size: 16px;
+      }
+      .card p {
+        margin: 0 0 12px 0;
+        color: #cbd5f5;
+        line-height: 1.5;
+      }
+      .card code {
+        display: block;
+        padding: 8px;
+        border-radius: 8px;
+        background: #0b1220;
+        color: #e6e9ef;
+        font-size: 12px;
+        border: 1px solid #1f2a3b;
+        overflow-x: auto;
+      }
+      footer {
+        margin-top: 28px;
+        color: #94a3b8;
+        font-size: 12px;
+      }
+      a {
+        color: #8ab4f8;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <section class="hero">
+        <div>
+          <h1>FastPay API</h1>
+          <p>
+            Secure backend for device sync, messaging, notifications, contacts, and admin workflows.
+            Use this page as a quick reference for the most common endpoints and payloads.
+          </p>
+        </div>
+      </section>
+
+      <section class="grid">
+        <div class="card">
+          <h3>Sync Contract</h3>
+          <p>Client contract and pagination rules for sync clients.</p>
+          <code>GET /api/sync/contract/</code>
+        </div>
+        <div class="card">
+          <h3>Sync Status</h3>
+          <p>Fetch or update device sync status for dashboards or mobile clients.</p>
+          <code>GET /api/sync/status/?device_id=ANDROID_ID</code>
+        </div>
+        <div class="card">
+          <h3>Device Registration</h3>
+          <p>Register or update device metadata for the dashboard.</p>
+          <code>POST /api/devices/</code>
+        </div>
+        <div class="card">
+          <h3>Messages Sync</h3>
+          <p>Bulk upload SMS messages from device.</p>
+          <code>POST /api/messages/</code>
+        </div>
+        <div class="card">
+          <h3>Notifications Sync</h3>
+          <p>Bulk upload notification events from device.</p>
+          <code>POST /api/notifications/</code>
+        </div>
+        <div class="card">
+          <h3>Contacts Sync</h3>
+          <p>Bulk upload contacts or upsert from device.</p>
+          <code>POST /api/contacts/</code>
+        </div>
+        <div class="card">
+          <h3>Dashboard Login</h3>
+          <p>Authenticate dashboard users.</p>
+          <code>POST /api/dashboard-login/</code>
+        </div>
+        <div class="card">
+          <h3>Activity Logs</h3>
+          <p>Retrieve admin activity history.</p>
+          <code>GET /api/dashboard-activity-logs/</code>
+        </div>
+        <div class="card">
+          <h3>Capture Ingestion</h3>
+          <p>Browser extension capture endpoint.</p>
+          <code>POST /api/captures/</code>
+        </div>
+        <div class="card">
+          <h3>Gmail / Drive</h3>
+          <p>Google integrations for email and file access.</p>
+          <code>GET /api/gmail/status/</code>
+        </div>
+        <div class="card">
+          <h3>Command Logs</h3>
+          <p>Track device commands executed by APK.</p>
+          <code>POST /api/command-logs/</code>
+        </div>
+        <div class="card">
+          <h3>Admin Panel</h3>
+          <p>Django admin interface for models and audit.</p>
+          <code>GET /admin/</code>
+        </div>
+      </section>
+
+      <footer>
+        API base: <a href="https://api.fastpaygaming.com/api/">/api/</a>
+      </footer>
+    </div>
+  </body>
+  </html>

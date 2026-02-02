@@ -1,0 +1,73 @@
+services:
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - ${ENV_FILE:-.env.production}
+    environment:
+      - POSTGRES_DB=${DB_NAME:-fastpay_db}
+      - POSTGRES_USER=${DB_USER:-fastpay_user}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-changeme}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fastpay_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fastpay_network
+
+  web:
+    build: .
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn fastpay_be.wsgi:application --bind 0.0.0.0:8000 --workers 4 --threads 2 --timeout 120"
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+      - storage_volume:/app/storage
+    ports:
+      - "8000:8000"
+    env_file:
+      - ${ENV_FILE:-.env.production}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - fastpay_network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/html:/usr/share/nginx/html/api:ro
+      - ./nginx/acme:/var/www/certbot:ro
+      - static_volume:/app/staticfiles:ro
+      - media_volume:/app/media:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ${DASHBOARD_DIST_PATH:-/opt/FASTPAY/DASHBOARD/dist}:/usr/share/nginx/html/dashboard:ro
+      - ${STAGING_DASHBOARD_DIST_PATH:-/opt/FASTPAY_BASE/DASHBOARD/dist}:/usr/share/nginx/html/test:ro
+    depends_on:
+      - web
+    networks:
+      - fastpay_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
+  storage_volume:
+
+networks:
+  fastpay_network:
+    driver: bridge

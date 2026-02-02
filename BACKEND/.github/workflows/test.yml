@@ -1,0 +1,91 @@
+name: Backend Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'BACKEND/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'BACKEND/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: fastpay_test
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    
+    - name: Cache pip packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('BACKEND/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      working-directory: BACKEND
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install coverage pytest pytest-django pytest-cov
+    
+    - name: Run tests with coverage
+      working-directory: BACKEND
+      env:
+        DB_ENGINE: django.db.backends.postgresql
+        DB_NAME: fastpay_test
+        DB_USER: test_user
+        DB_PASSWORD: test_pass
+        DB_HOST: localhost
+        DB_PORT: 5432
+        SECRET_KEY: test-secret-key-for-ci
+        DEBUG: True
+      run: |
+        python manage.py test --verbosity=2
+        coverage run --source='api' --omit='*/migrations/*,*/tests/*' manage.py test
+        coverage report
+        coverage xml
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./BACKEND/coverage.xml
+        flags: backend
+        name: backend-coverage
+    
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results
+        path: BACKEND/htmlcov/
+    
+    - name: Comment PR with coverage
+      if: github.event_name == 'pull_request'
+      uses: py-cov-action/python-coverage-comment-action@v3
+      with:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        COVERAGE_XML_PATH: BACKEND/coverage.xml

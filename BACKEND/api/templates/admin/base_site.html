@@ -1,0 +1,46 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+  :root {
+    --fp-primary: #1f2a44;
+    --fp-accent: #2eaadc;
+    --fp-bg: #f5f7fb;
+  }
+
+  body {
+    background: var(--fp-bg);
+  }
+
+  #header {
+    background: var(--fp-primary);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  #branding h1,
+  #branding h1 a {
+    color: #ffffff;
+  }
+
+  .module h2,
+  .module caption,
+  .inline-group h2 {
+    background: var(--fp-primary);
+  }
+
+  a:link,
+  a:visited {
+    color: var(--fp-accent);
+  }
+
+  .button,
+  input[type="submit"],
+  input[type="button"],
+  .submit-row input,
+  .button.default {
+    background: var(--fp-accent);
+    border-color: var(--fp-accent);
+  }
+</style>
+{% endblock %}
