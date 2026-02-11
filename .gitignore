@@ -8,6 +8,17 @@ Thumbs.db
 .env.staging
 .env.*.local
 
+# Environment (all directories – BACKEND, DASHBOARD_FASTPAY, DASHBOARD_REDPAY, DASHBOARD, etc.)
+**/.env
+**/.env.local
+**/.env.staging
+**/.env.production
+**/.env.redpay
+**/.env.redpay-prod
+**/.env.*.local
+# Keep .env.example as committed template
+!**/.env.example
+
 # Editor
 *.swp
 *.swo
