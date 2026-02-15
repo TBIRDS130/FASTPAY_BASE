@@ -23,6 +23,7 @@ import { UtilitySectionView } from '@/pages/dashboard/views/UtilitySectionView'
 import { ApiSectionView } from '@/pages/dashboard/views/ApiSectionView'
 import { UserManagementSectionView } from '@/pages/dashboard/views/UserManagementSectionView'
 import { BankCardSidebar } from '@/component/BankCardSidebar'
+import { BankSectionTabs, type BankSectionTab } from '@/pages/dashboard/components/BankSectionTabs'
 
 function readStoredSection(accessLevel: number): DashboardSectionType {
   const validKeys = getVisibleSections(accessLevel).map(s => s.key)
@@ -52,9 +53,10 @@ export function DashboardShell({
   const userAccessLevel = userAccessLevelProp ?? getUserAccess()
 
   const [activeSection, setActiveSection] = useState<DashboardSectionType>(() =>
-    readStoredSection(userAccessLevelProp ?? getUserAccess())
+    readStoredSection(userAccessLevelProp ?? 0)
   )
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null)
+  const [rightSidebarTab, setRightSidebarTab] = useState<BankSectionTab>('bankcard')
   const [layoutThemeId, setLayoutThemeId] = useState(getDefaultDashboardLayoutThemeId)
 
   const handleLayoutThemeChange = useCallback((id: string) => {
@@ -221,10 +223,31 @@ export function DashboardShell({
 
   const rightSidebarContent = useMemo(() => {
     if (activeSection === 'device' || activeSection === 'bankcard') {
-      return (deviceId: string | null) => <BankCardSidebar deviceId={deviceId} />
+      return (deviceId: string | null) => (
+        <div className="flex flex-col h-full min-h-0">
+          <div className="shrink-0 mb-3">
+            <BankSectionTabs 
+              activeTab={rightSidebarTab} 
+              onTabChange={setRightSidebarTab} 
+            />
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            {rightSidebarTab === 'bankcard' && (
+              <BankCardSidebar deviceId={deviceId} />
+            )}
+            {rightSidebarTab === 'utilities' && (
+              <UtilitySectionView
+                deviceId={deviceId}
+                sessionEmail={userEmail}
+                isAdmin={userAccessLevel === 0}
+              />
+            )}
+          </div>
+        </div>
+      )
     }
     return undefined
-  }, [activeSection])
+  }, [activeSection, rightSidebarTab, userEmail, userAccessLevel])
 
   const leftSidebarOverride = useMemo(() => {
     if (activeSection === 'bankcard') {

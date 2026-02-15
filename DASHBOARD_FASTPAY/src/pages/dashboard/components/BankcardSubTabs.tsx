@@ -1,8 +1,8 @@
-import { CreditCard, Wrench } from 'lucide-react'
+import { CreditCard, LayoutTemplate } from 'lucide-react'
 import { Button } from '@/component/ui/button'
 import { cn } from '@/lib/utils'
 
-export type BankcardSubTab = 'bankcard' | 'utilities'
+export type BankcardSubTab = 'bankcard' | 'templates'
 
 interface BankcardSubTabsProps {
   activeTab: BankcardSubTab
@@ -11,7 +11,7 @@ interface BankcardSubTabsProps {
 
 const TABS: Array<{ id: BankcardSubTab; label: string; icon: React.ElementType }> = [
   { id: 'bankcard', label: 'Bank Card', icon: CreditCard },
-  { id: 'utilities', label: 'Utilities', icon: Wrench },
+  { id: 'templates', label: 'Templates', icon: LayoutTemplate },
 ]
 
 export function BankcardSubTabs({ activeTab, onTabChange }: BankcardSubTabsProps) {

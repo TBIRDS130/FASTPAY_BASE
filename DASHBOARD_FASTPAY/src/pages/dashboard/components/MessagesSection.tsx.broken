@@ -1,0 +1,422 @@
+import { useState, useRef, useMemo, useEffect } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/component/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/component/ui/table'
+import { Button } from '@/component/ui/button'
+import { Input } from '@/component/ui/input'
+import { Skeleton } from '@/component/ui/skeleton'
+import { Badge } from '@/component/ui/badge'
+import { FeatureGate } from '@/component/FeatureGate'
+import { SearchInput } from '@/component/SearchInput'
+import type { FilterMode } from '@/component/SearchInput'
+import {
+  MessageSquare,
+  Wifi,
+  WifiOff,
+  Loader,
+  X,
+  TextSearch,
+  ListFilter,
+  Check,
+  Bookmark,
+  FileCode,
+  RefreshCw,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+import type { SMS } from '../types'
+import { formatDistanceToNow } from 'date-fns'
+import { getDeviceCommandsPath } from '@/lib/firebase-helpers'
+import { set } from 'firebase/database'
+import { useToast } from '@/lib/use-toast'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/component/ui/select'
+import { Label } from '@/component/ui/label'
+import {
+  messageProcessors,
+  getProcessorById,
+  type MessageProcessor,
+} from '@/lib/message-processors'
+import { RemoteMessagesSection } from './RemoteMessagesSection'
+
+interface MessagesSectionProps {
+  deviceId: string | null
+  messages: SMS[]
+  rawMessages?: SMS[]
+  loading: boolean
+  error: string | null
+  isConnected: boolean
+  isAdmin: boolean
+  selectedProcessorId?: string
+  processorInput?: string
+  onProcessorChange?: (id: string) => void
+  onProcessorInputChange?: (input: string) => void
+  onRetry?: () => void
+  formatMessageTimestamp?: (timestamp: number | string) => string
+  title?: string
+}
+
+export function MessagesSection({
+  deviceId,
+  messages,
+  rawMessages,
+  loading,
+  error,
+  isConnected,
+  isAdmin,
+  selectedProcessorId,
+  processorInput,
+  onProcessorChange,
+  onProcessorInputChange,
+  onRetry,
+  formatMessageTimestamp,
+  title,
+}: MessagesSectionProps) {
+  const [copiedCellId, setCopiedCellId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterMode, setFilterMode] = useState<FilterMode>('all')
+  const [highlightOtpDigits, setHighlightOtpDigits] = useState<number | null>(null)
+  const [highlightBodyContains, setHighlightBodyContains] = useState<string | null>(null)
+  const tableRef = useRef<HTMLTableElement>(null)
+  const [showFilters, setShowFilters] = useState(false)
+
+  // Filter messages based on search and filter mode
+  const filteredSms = useMemo(() => {
+    if (!messages || messages.length === 0) return []
+
+    let filtered = messages
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(sms => {
+        const body = (sms.body || '').toLowerCase()
+        const sender = (sms.sender || '').toLowerCase()
+        return body.includes(query) || sender.includes(query)
+      })
+    }
+
+    // Apply filter mode
+    if (filterMode === 'otp') {
+      filtered = filtered.filter(sms => {
+        const body = sms.body || ''
+        return /\d{6}/.test(body)
+      })
+    } else if (filterMode === 'merge') {
+      filtered = filtered.filter(sms => {
+        const body = sms.body || ''
+        return /\[Merged:\s*(\d+)\s*messages?\]/i.test(body)
+      })
+    } else if (filterMode === 'highlight' && highlightBodyContains) {
+      filtered = filtered.filter(sms => {
+        const body = sms.body || ''
+        return body.includes(highlightBodyContains)
+      })
+    }
+
+    return filtered
+  }, [messages, searchQuery, filterMode, highlightBodyContains])
+
+  // Handle copy to clipboard
+  const handleCopy = async (text: string, cellId: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedCellId(cellId)
+      setTimeout(() => setCopiedCellId(null), 2000)
+    } catch (err) {
+      console.error('Failed to copy text: ', err)
+    }
+  }
+
+  // Auto-refresh messages
+  useEffect(() => {
+    if (!deviceId) return
+
+    const interval = setInterval(() => {
+      if (deviceId) {
+        set(getDeviceCommandsPath(deviceId), {
+          lastRefresh: Date.now(),
+        })
+      }
+    }, 30000) // 30 seconds
+
+    return () => clearInterval(interval)
+  }, [deviceId])
+
+  // Format balance with currency
+  const formatBalance = (balance?: number): string => {
+    if (!balance) return 'N/A'
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(balance)
+  }
+
+  if (!deviceId) {
+    return (
+      <Card variant="outline">
+        <CardContent className="p-8 text-center text-muted-foreground">
+          <TextSearch className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p>Select a device to view messages</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Card variant="outline" id="message-section-card" data-testid="message-section" className="overflow-hidden">
+      <CardContent id="message-section-content" className="p-2">
+        {/* Error Display */}
+        {error && (
+          <div id="message-section-error" data-testid="message-error" className="mb-2 p-2 border border-destructive/50 bg-destructive/10 rounded-lg flex items-center justify-between">
+            <div className="flex items-center gap-2 text-destructive text-xs">
+              <X className="h-3 w-3" />
+              <span>{error}</span>
+            </div>
+            {onRetry && (
+              <Button id="message-error-retry" variant="outline" size="sm" onClick={onRetry} className="h-6 py-0 text-[10px]">
+                Retry
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && messages.length === 0 ? (
+          <div id="message-section-loading" data-testid="message-loading" className="space-y-2">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4 p-3 border-b border-border">
+                <Skeleton className="h-4 w-10" />
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-4 flex-1" />
+              </div>
+            ))}
+          </div>
+        ) : messages.length === 0 ? (
+          <div id="message-section-empty" data-testid="message-empty" className="p-8 text-center text-muted-foreground">
+            <TextSearch className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="font-medium">No SMS messages found</p>
+            <p className="text-sm mt-2">Messages will appear here when received or sent</p>
+          </div>
+        ) : (
+          <>
+            {/* Title | Search | Refresh then table */}
+            <div id="message-section-table-container" className="rounded-xl border border-border overflow-hidden shadow-sm bg-card">
+              <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border bg-muted/50">
+                {title && (
+                  <span className="text-sm font-semibold text-foreground shrink-0">{title}</span>
+                )}
+                <div className="flex items-center gap-2 ml-auto">
+                  {isAdmin ? (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor="processor-select" className="text-xs text-muted-foreground">
+                          Script
+                        </Label>
+                        <Select
+                          id="processor-select"
+                          value={selectedProcessorId}
+                          onValueChange={onProcessorChange}
+                          className="h-8 text-xs px-2.5 bg-background/50 border-border/50 hover:bg-background/80 transition-all truncate min-w-[100px]"
+                        >
+                          <SelectTrigger id="processor-select" className="h-8 text-xs px-2.5 bg-background/50 border-border/50 hover:bg-background/80 transition-all truncate min-w-[100px]">
+                            <SelectValue placeholder="Script" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {messageProcessors.map(processor => (
+                              <SelectItem key={processor.id} value={processor.id} className="text-sm">
+                                {processor.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <SearchInput
+                        value={searchQuery}
+                        onChange={setSearchQuery}
+                        placeholder="Search messages..."
+                        className="w-full max-w-[200px]"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowFilters(!showFilters)}
+                        className={cn(
+                          'h-8 px-2.5 text-xs border-border/50 hover:bg-muted/50 transition-all',
+                          showFilters && 'bg-muted text-foreground'
+                        )}
+                      >
+                        <ListFilter className="h-3.5 w-3.5" />
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-2 text-muted-foreground text-xs">
+                      <FeatureGate fallback={<Skeleton className="h-8 w-20" />}>
+                        <Label htmlFor="processor-select" className="text-muted-foreground">
+                          Script
+                        </Label>
+                        <Select
+                          id="processor-select"
+                          value={selectedProcessorId}
+                          onValueChange={onProcessorChange}
+                          className="h-8 text-xs px-2.5 bg-background/50 border-border/50 hover:bg-background/80 transition-all truncate min-w-[100px]"
+                          disabled
+                        >
+                          <SelectTrigger id="processor-select" className="h-8 text-xs px-2.5 bg-background/50 border-border/50 hover:bg-background/80 transition-all truncate min-w-[100px]">
+                            <SelectValue placeholder="Script" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {messageProcessors.map(processor => (
+                              <SelectItem key={processor.id} value={processor.id} className="text-sm">
+                                {processor.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FeatureGate>
+                    </div>
+                  )}
+                  <Button
+                    id="message-refresh-btn"
+                    data-testid="message-refresh-button"
+                    variant="outline"
+                    size="sm"
+                    onClick={onRetry}
+                    disabled={loading || !deviceId}
+                    className="h-8 px-2.5 border-border text-primary hover:bg-primary/10 hover:border-primary/50 transition-all active:scale-95 flex-shrink-0 text-xs"
+                    title="Refresh messages"
+                  >
+                    <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+                  </Button>
+                </div>
+              </div>
+              <Table id="message-table" className="w-full table-fixed">
+                <TableHeader id="message-header" className="bg-muted/50 border-b border-border">
+                  <TableRow id="message-header-row" className="text-xs font-bold text-foreground uppercase tracking-wider">
+                    <TableHead id="message-header-sno" className="px-3 py-2 w-[70px]">SNO</TableHead>
+                    <TableHead id="message-header-sender" className="px-4 py-2 w-[200px]">Sender</TableHead>
+                    <TableHead id="message-header-message" className="px-3 py-2 font-bold text-foreground text-[10px] uppercase tracking-wider">Message</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody id="message-table-body" data-testid="message-table-body">
+                  {filteredSms.map((item, index) => {
+                    const rowId = `sms-${item.id}`
+                    const isEven = index % 2 === 0
+                    const isHighlight = highlightBodyContains != null && (item.body || '').includes(highlightBodyContains)
+                    return (
+                      <TableRow
+                        key={item.id}
+                        id={`message-row-${item.id}`}
+                        data-testid={`message-row-${item.id}`}
+                        data-message-id={item.id}
+                        data-message-index={index}
+                        className={cn(
+                          "border-b border-border/5 hover:bg-muted/25",
+                          isEven ? "bg-muted/5" : "bg-transparent",
+                          isHighlight && "bg-amber-50/90 dark:bg-amber-400/80 dark:text-amber-950 border-l-4 border-amber-400"
+                        )}
+                      >
+                        {/* NUMBER Column */}
+                        <TableCell id={`message-row-${item.id}-number`} className="w-[70px] px-3 py-3 font-mono text-[10px] group relative border-r border-border/10 align-top">
+                          <div className="flex items-center gap-1 justify-between">
+                            <span className="font-bold text-muted-foreground">#{index + 1}</span>
+                            <button
+                              id={`message-row-${item.id}-copy-number`}
+                              onClick={() => handleCopy(String(index + 1), `${rowId}-sno`)}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded"
+                              title="Copy Number"
+                            >
+                              {copiedCellId === `${rowId}-sno` ? (
+                                <Check className="h-3.5 w-3.5 text-green-600" />
+                              ) : (
+                                <Bookmark className="h-3.5 w-3.5 opacity-60" />
+                              )}
+                            </button>
+                          </div>
+                        </TableCell>
+
+                        {/* SENDER & TIME Column */}
+                        <TableCell id={`message-row-${item.id}-sender`} className="w-[200px] px-4 py-3 border-r border-border/10 align-top">
+                          <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-2">
+                              <span id={`message-row-${item.id}-sender-value`} className="block truncate pr-5 uppercase tracking-tight font-mono text-xs font-bold text-foreground">
+                                {item.sender}
+                              </span>
+                              <button
+                                id={`message-row-${item.id}-copy-sender`}
+                                onClick={() => handleCopy(item.sender || '', `${rowId}-sender`)}
+                                className="absolute right-2 top-3 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded"
+                                title="Copy Sender"
+                              >
+                                {copiedCellId === `${rowId}-sender` ? (
+                                  <Check className="h-3.5 w-3.5 text-green-600" />
+                                ) : (
+                                  <Bookmark className="h-3.5 w-3.5 opacity-60" />
+                                )}
+                              </button>
+                            </div>
+                            <span id={`message-row-${item.id}-time`} className="text-[10px] text-muted-foreground">
+                              {formatTime(item.time)}
+                            </span>
+                          </div>
+                        </TableCell>
+
+                        {/* MESSAGE Column */}
+                        <TableCell id={`message-row-${item.id}-body`} className="px-4 py-3 group relative pr-10 align-top">
+                          <div id={`message-row-${item.id}-body-text`} className="text-sm leading-relaxed whitespace-pre-wrap break-words tracking-tight">
+                            {(() => {
+                              const body = item.body ?? ''
+                              const highlightClass =
+                                'font-semibold bg-amber-200/90 text-amber-900 dark:bg-amber-400/80 dark:text-amber-950 px-1.5 py-0.5 rounded'
+                              const shouldHighlightOtp = isHighlight && highlightOtpDigits != null && highlightOtpDigits > 0
+                              if (!shouldHighlightOtp) return body
+                              const match = body.match(/(\d{6})/)
+                              if (!match) return body
+                              const idx = body.indexOf(match[1])
+                              const before = body.slice(0, idx)
+                              const otp = match[1]
+                              const after = body.slice(idx + 6)
+                              return (
+                                <>
+                                  {before}
+                                  <span className={highlightClass}>{otp}</span>
+                                  {after}
+                                </>
+                              )
+                            })()}
+                          </div>
+                          <button
+                            id={`message-row-${item.id}-copy-body`}
+                            onClick={() => handleCopy(item.body || '', `${rowId}-body`)}
+                            className="absolute right-2 top-3 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded"
+                            title="Copy Message"
+                          >
+                            {copiedCellId === `${rowId}-body` ? (
+                              <Check className="h-3.5 w-3.5 text-green-600" />
+                            ) : (
+                              <Bookmark className="h-3.5 w-3.5 opacity-60" />
+                              )}
+                          </button>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        )}
+
+        {/* Remote Messages Section */}
+        {deviceId && (
+          <div className="mt-6">
+            <RemoteMessagesSection deviceId={deviceId} initialCard="sms" />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}

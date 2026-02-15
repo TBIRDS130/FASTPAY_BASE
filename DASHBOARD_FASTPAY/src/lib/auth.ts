@@ -189,9 +189,7 @@ export async function updateUserAccess(email: string, accessLevel: number): Prom
     }
 
     // Call Django endpoint
-    const apiUrl = API_BASE_URL.endsWith('/')
-      ? `${API_BASE_URL}dashboard-update-access/`
-      : `${API_BASE_URL}/dashboard-update-access/`
+    const apiUrl = getApiUrl('/dashboard-update-access/')
     
     const response = await fetch(apiUrl, {
       method: 'POST',
@@ -280,9 +278,7 @@ export async function syncThemeFromBackend(): Promise<void> {
 export async function configureUserAccess(adminEmail: string = 'admin@fastpay.com'): Promise<void> {
   try {
     // Call Django endpoint
-    const apiUrl = API_BASE_URL.endsWith('/')
-      ? `${API_BASE_URL}dashboard-configure-access/`
-      : `${API_BASE_URL}/dashboard-configure-access/`
+    const apiUrl = getApiUrl('/dashboard-configure-access/')
     
     const response = await fetch(apiUrl, {
       method: 'POST',

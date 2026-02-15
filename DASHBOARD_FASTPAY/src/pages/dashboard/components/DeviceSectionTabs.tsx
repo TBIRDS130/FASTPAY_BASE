@@ -15,16 +15,18 @@ export function DeviceSectionTabs({ activeTab, onTabChange, deviceId, isAdmin }:
   if (!deviceId) return null
 
   const tabs: Array<{ id: DeviceSectionTab; label: string; icon: React.ElementType; adminOnly?: boolean }> = [
-    { id: 'message', label: 'Message', icon: MessageSquare },
-    { id: 'google', label: 'Gmail', icon: Mail },
-    { id: 'command', label: 'Command', icon: Terminal },
-    { id: 'instruction', label: 'Instruction', icon: FileText },
-    { id: 'permission', label: 'Permission', icon: Shield },
-  ].filter(tab => !tab.adminOnly || isAdmin)
+    { id: 'message' as const, label: 'Message', icon: MessageSquare },
+    { id: 'google' as const, label: 'Gmail', icon: Mail },
+    { id: 'command' as const, label: 'Command', icon: Terminal, adminOnly: true },
+    { id: 'instruction' as const, label: 'Instruction', icon: FileText },
+    { id: 'permission' as const, label: 'Permission', icon: Shield, adminOnly: true },
+  ]
+
+  const filteredTabs = tabs.filter(tab => isAdmin || !tab.adminOnly)
 
   return (
     <div id="device-section-tabs" className="flex items-center gap-2 px-4 py-3 border border-border rounded-xl bg-transparent">
-      {tabs.map(tab => {
+      {filteredTabs.map(tab => {
         const Icon = tab.icon as React.ElementType
         const isActive = activeTab === tab.id
         return (

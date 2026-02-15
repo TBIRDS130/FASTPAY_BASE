@@ -321,6 +321,105 @@
     animation: slide-up 0.3s ease-out;
   }
 
+  /* Slide in left animation */
+  @keyframes slide-in-left {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  .slide-in-left {
+    animation: slide-in-left 0.3s ease-out;
+  }
+
+  /* Slide in right animation */
+  @keyframes slide-in-right {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  .slide-in-right {
+    animation: slide-in-right 0.3s ease-out;
+  }
+
+  /* Animation classes for SectionAnimator */
+  @keyframes animate-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  .animate-fade-in {
+    animation: animate-fade-in var(--duration-slow) var(--easing-ease-out);
+  }
+
+  @keyframes animate-slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-slide-up {
+    animation: animate-slide-up var(--duration-slow) var(--easing-ease-out);
+  }
+
+  @keyframes animate-slide-in-left {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  .animate-slide-in-left {
+    animation: animate-slide-in-left var(--duration-slow) var(--easing-ease-out);
+  }
+
+  @keyframes animate-slide-in-right {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  .animate-slide-in-right {
+    animation: animate-slide-in-right var(--duration-slow) var(--easing-ease-out);
+  }
+
+  @keyframes animate-scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  .animate-scale-in {
+    animation: animate-scale-in var(--duration-slow) var(--easing-ease-out);
+  }
+
   /* Border style demos - 4 thick unique looks */
   .border-demo-double {
     border: 4px solid hsl(var(--depth-frame-border));

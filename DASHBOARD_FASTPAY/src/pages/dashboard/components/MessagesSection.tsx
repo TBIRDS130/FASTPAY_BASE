@@ -345,7 +345,8 @@ export function MessagesSection({
   }
 
   return (
-    <Card variant="outline" id="message-section-card" data-testid="message-section" className="overflow-hidden">
+    <>
+      <Card variant="outline" id="message-section-card" data-testid="message-section" className="overflow-hidden">
       <CardContent id="message-section-content" className="p-2">
         {/* Error Display */}
         {error && (

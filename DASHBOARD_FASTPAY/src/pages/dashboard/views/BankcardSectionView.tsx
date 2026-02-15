@@ -1,6 +1,6 @@
 import React, { useState, lazy, Suspense } from 'react'
 import { BankcardSubTabs, type BankcardSubTab } from '@/pages/dashboard/components/BankcardSubTabs'
-import { UtilitySectionView } from '@/pages/dashboard/views/UtilitySectionView'
+import { TemplatesSection } from '@/pages/dashboard/components/TemplatesSection'
 
 const SectionLoader = () => (
   <div className="flex items-center justify-center p-8">
@@ -59,12 +59,8 @@ export function BankcardSectionView({
         </div>
       )}
 
-      {bankcardSubTab === 'utilities' && (
-        <UtilitySectionView
-          deviceId={deviceId}
-          sessionEmail={sessionEmail}
-          isAdmin={isAdmin}
-        />
+      {bankcardSubTab === 'templates' && (
+        <TemplatesSection />
       )}
     </div>
   )

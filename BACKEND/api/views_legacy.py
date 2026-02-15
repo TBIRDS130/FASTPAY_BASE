@@ -627,7 +627,7 @@ def gmail_init_auth(request):
 @api_view(['GET'])
 def gmail_callback(request):
     """
-    Handle Gmail OAuth callback
+    Enhanced Gmail OAuth callback with comprehensive error handling
     Exchange authorization code for tokens and store in database.
     When DASHBOARD_ORIGIN is set, redirects user back to dashboard (for domain deployment).
     """
@@ -635,7 +635,22 @@ def gmail_callback(request):
     state = request.query_params.get('state')
     error = request.query_params.get('error')
 
-    def _error_response(msg, status_code=status.HTTP_400_BAD_REQUEST):
+    def _log_error(error_type: str, details: str):
+        log_activity(
+            request, 
+            f'gmail_oauth_{error_type}', 
+            details,
+            extra_data={
+                'state': state,
+                'error': error,
+                'code_received': bool(code),
+                'user_agent': request.META.get('HTTP_USER_AGENT'),
+                'ip_address': get_client_ip(request)
+            }
+        )
+
+    def _error_response(msg: str, status_code: int = 400):
+        _log_error('error', msg)
         redirect_url = _dashboard_redirect('dashboard/v2', google='error', message=msg[:200])
         if redirect_url:
             return HttpResponseRedirect(redirect_url)
@@ -654,24 +669,32 @@ def gmail_callback(request):
     try:
         state_token, user_email, dashboard_origin, dashboard_path = verify_signed_state(state)
     except GmailServiceError as e:
-        return _error_response(str(e))
+        return _error_response(f'State verification failed: {str(e)}')
 
     try:
         # Exchange code for tokens
         token_data = exchange_code_for_tokens(code)
+        
+        # Validate token data
+        if not token_data.get('access_token'):
+            raise GmailServiceError('No access token received')
 
-        # Get Gmail profile to get email address
+        # Get Gmail profile to get email address with timeout and error handling
         profile_url = 'https://www.googleapis.com/oauth2/v2/userinfo'
-        profile_response = requests.get(
-            profile_url,
-            headers={'Authorization': f"Bearer {token_data['access_token']}"}
-        )
-
-        if profile_response.ok:
-            profile = profile_response.json()
-            gmail_email = profile.get('email', '')
-        else:
-            gmail_email = user_email  # Fallback
+        try:
+            profile_response = requests.get(
+                profile_url,
+                headers={'Authorization': f"Bearer {token_data['access_token']}"},
+                timeout=10
+            )
+            
+            if profile_response.ok:
+                profile = profile_response.json()
+                gmail_email = profile.get('email', '')
+            else:
+                raise GmailServiceError(f'Profile fetch failed: {profile_response.status_code}')
+        except requests.RequestException as e:
+            raise GmailServiceError(f'Network error during profile fetch: {str(e)}')
 
         # Calculate token expiration
         expires_in = token_data.get('expires_in', 3600)
@@ -693,6 +716,19 @@ def gmail_callback(request):
             }
         )
 
+        # Log successful connection
+        log_activity(
+            request,
+            'gmail_oauth_success',
+            f'Gmail account connected: {gmail_email}',
+            extra_data={
+                'user_email': user_email,
+                'gmail_email': gmail_email,
+                'created': created,
+                'scopes': token_data.get('scope', '')
+            }
+        )
+
         # Link to device if this was initiated by APK (session only available when callback is same-origin)
         device_id = request.session.get(f'gmail_oauth_device_{user_email}')
         if device_id:
@@ -701,7 +737,7 @@ def gmail_callback(request):
             request.session.pop(f'gmail_oauth_device_{user_email}', None)
 
         # Redirect to dashboard when deployed on domain so user doesn't see JSON (use origin+path from state for REDPAY)
-        redirect_url = _dashboard_redirect('dashboard/v2', origin_override=dashboard_origin, path_override=dashboard_path, google='connected', tab='google')
+        redirect_url = _dashboard_redirect('dashboard/v2', origin_override=dashboard_origin, path_override=dashboard_path, google='connected', tab='google', message=f'Successfully connected {gmail_email}')
         if redirect_url:
             return HttpResponseRedirect(redirect_url)
 
@@ -716,8 +752,10 @@ def gmail_callback(request):
 
     except GmailServiceError as e:
         return _error_response(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except requests.RequestException as e:
+        return _error_response(f'Network error during token exchange: {str(e)}', status.HTTP_500_INTERNAL_SERVER_ERROR)
     except Exception as e:
-        return _error_response(f'Failed to connect Gmail: {str(e)}', status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return _error_response(f'Unexpected error: {str(e)}', status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['GET'])
