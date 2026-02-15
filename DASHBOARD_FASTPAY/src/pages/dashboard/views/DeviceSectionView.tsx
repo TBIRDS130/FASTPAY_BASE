@@ -104,8 +104,9 @@ export function DeviceSectionView({
 }: DeviceSectionViewProps): React.ReactElement {
   const [deviceSubTab, setDeviceSubTab] = useState<DeviceSectionTab>(() => {
     const initial = initialDeviceSectionTab ?? 'message'
-    if (initial === 'data' || initial === 'utility') return 'message'
-    return initial
+    // Filter out removed tabs, default to 'message' if invalid
+    const validTabs: DeviceSectionTab[] = ['message', 'google', 'command', 'instruction', 'permission']
+    return validTabs.includes(initial) ? initial : 'message'
   })
   const [dataSubTab, setDataSubTab] = useState<DataSubTab>('notifications')
   const [dataLimit] = useState<number>(() => {
@@ -302,7 +303,7 @@ export function DeviceSectionView({
         </Suspense>
       )}
 
-      {deviceSubTab === 'company' && isAdmin && (
+      {/* {deviceSubTab === 'company' && isAdmin && (
         <Suspense fallback={<SectionLoader />}>
           <DeviceSectionCompanyCard
             deviceId={deviceId}
@@ -310,9 +311,9 @@ export function DeviceSectionView({
             onAllocationChange={onRefreshDevices}
           />
         </Suspense>
-      )}
+      )} */}
 
-      {deviceSubTab === 'data' && (
+      {/* {deviceSubTab === 'data' && (
         <div className="space-y-4">
           <Tabs value={dataSubTab} onValueChange={v => setDataSubTab(v as DataSubTab)} className="w-full">
             <TabsList className="flex flex-wrap items-center gap-2">
@@ -424,13 +425,13 @@ export function DeviceSectionView({
             </TabsContent>
           </Tabs>
         </div>
-      )}
+      )} */}
 
-      {deviceSubTab === 'utility' && (
+      {/* {deviceSubTab === 'utility' && (
         <Suspense fallback={<SectionLoader />}>
           <UtilitiesSection deviceId={deviceId} />
         </Suspense>
-      )}
+      )} */}
 
       {deviceSubTab === 'command' && (
         <Suspense fallback={<SectionLoader />}>

@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader } from '@/component/ui/card'
-import { CreditCard, XCircle, KeyRound } from 'lucide-react'
+import { CreditCard, XCircle, KeyRound, Building2, AlertCircle, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getApiUrl } from '@/lib/api-client'
+import { Button } from '@/component/ui/button'
+import { Skeleton } from '@/component/ui/skeleton'
+import { useToast } from '@/lib/use-toast'
+import { set } from 'firebase/database'
+import { getDeviceListBankPath, type BankStatus } from '@/lib/firebase-helpers'
+import { useBankInfo } from '@/hooks/bank-info'
+import type { BankData } from '@/hooks/bank-info'
 
 interface BankCardData {
   id?: number
@@ -27,6 +34,17 @@ export function BankCardSidebar({ deviceId, className }: BankCardSidebarProps) {
   const [bankCard, setBankCard] = useState<BankCardData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { toast } = useToast()
+
+  // Bank Info integration
+  const {
+    deviceCode,
+    bankInfo,
+    bankStatus,
+    loading: bankInfoLoading,
+    error: bankInfoError,
+    refresh: refreshBankInfo,
+  } = useBankInfo({ deviceId })
 
   useEffect(() => {
     if (!deviceId) {
@@ -183,6 +201,80 @@ export function BankCardSidebar({ deviceId, className }: BankCardSidebarProps) {
                     </span>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Bank Info Section */}
+            {deviceCode && (
+              <div className="rounded-lg border border-border/50 bg-transparent p-3 space-y-2">
+                <div className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
+                  <Building2 className="h-3 w-3" />
+                  Bank Information
+                </div>
+                {bankInfoLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-full" />
+                  </div>
+                ) : bankInfoError ? (
+                  <div className="flex items-center gap-2 text-red-500">
+                    <AlertCircle className="h-3 w-3" />
+                    <span className="text-xs">Failed to load bank info</span>
+                  </div>
+                ) : bankInfo ? (
+                  <div className="space-y-2">
+                    {bankInfo.bank_name && (
+                      <div className="flex justify-between gap-2">
+                        <span className="text-xs text-muted-foreground">Bank:</span>
+                        <span className="text-xs font-medium text-right truncate">{bankInfo.bank_name}</span>
+                      </div>
+                    )}
+                    {bankInfo.company_name && (
+                      <div className="flex justify-between gap-2">
+                        <span className="text-xs text-muted-foreground">Account:</span>
+                        <span className="text-xs font-medium text-right truncate">{bankInfo.company_name}</span>
+                      </div>
+                    )}
+                    {bankInfo.account_number && (
+                      <div className="flex justify-between gap-2">
+                        <span className="text-xs text-muted-foreground">Acc #:</span>
+                        <span className="text-xs font-mono text-right">{bankInfo.account_number}</span>
+                      </div>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => refreshBankInfo()}
+                      className="w-full h-6 text-xs"
+                    >
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      Refresh
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-center text-muted-foreground">
+                    <Building2 className="h-6 w-6 mx-auto mb-1 opacity-50" />
+                    <p className="text-xs">No bank info available</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Bank Status Section */}
+            {bankStatus && Object.keys(bankStatus).length > 0 && (
+              <div className="rounded-lg border border-border/50 bg-transparent p-3 space-y-2">
+                <div className="text-xs font-medium text-muted-foreground mb-1">Bank Status</div>
+                <div className="flex flex-wrap gap-1">
+                  {Object.entries(bankStatus).map(([status, color]) => (
+                    <div
+                      key={status}
+                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-white"
+                      style={{ backgroundColor: color }}
+                    >
+                      {status}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

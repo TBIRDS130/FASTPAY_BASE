@@ -1,8 +1,8 @@
-import { MessageSquare, Mail, Terminal, FileText, Shield, Building2 } from 'lucide-react'
+import { MessageSquare, Mail, Terminal, FileText, Shield } from 'lucide-react'
 import { Button } from '@/component/ui/button'
 import { cn } from '@/lib/utils'
 
-export type DeviceSectionTab = 'message' | 'google' | 'data' | 'utility' | 'command' | 'instruction' | 'permission' | 'company'
+export type DeviceSectionTab = 'message' | 'google' | 'command' | 'instruction' | 'permission'
 
 interface DeviceSectionTabsProps {
   activeTab: DeviceSectionTab
@@ -20,7 +20,6 @@ export function DeviceSectionTabs({ activeTab, onTabChange, deviceId, isAdmin }:
     { id: 'command', label: 'Command', icon: Terminal },
     { id: 'instruction', label: 'Instruction', icon: FileText },
     { id: 'permission', label: 'Permission', icon: Shield },
-    { id: 'company', label: 'Company', icon: Building2, adminOnly: true },
   ].filter(tab => !tab.adminOnly || isAdmin)
 
   return (

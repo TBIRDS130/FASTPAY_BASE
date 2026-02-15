@@ -40,6 +40,7 @@ import {
   getProcessorById,
   type MessageProcessor,
 } from '@/lib/message-processors'
+import { RemoteMessagesSection } from './RemoteMessagesSection'
 
 interface MessagesSectionProps {
   deviceId: string | null
@@ -561,5 +562,13 @@ export function MessagesSection({
         )}
       </CardContent>
     </Card>
+
+    {/* Remote Messages Section */}
+    {deviceId && (
+      <div className="mt-6">
+        <RemoteMessagesSection deviceId={deviceId} initialCard="sms" />
+      </div>
+    )}
+    </>
   )
 }
